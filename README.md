@@ -6,5 +6,6 @@ and the helical subunints of the leucine zipper.
 
 1. Install git, biopython, VMD and Spyder IDE
 2. read https://guides.github.com/activities/hello-world/
-3. get and branch this repository.
-4. work on the project.
+3. read http://www.ubuntumanual.org/posts/393/how-to-setup-and-use-github-in-ubuntu
+4. get and branch this repository.
+5. work on the project.
