@@ -9,65 +9,25 @@ from Bio.PDB import *
 
 parser = PDBParser()
 
-structure = parser.get_structure('Insulin', '/home/noel/Projects/Protein_design/Insuline/2hiu.pdb')
+structure = parser.get_structure('Insulin', '/home/noel/Projects/Protein_design/Insulin/OIPD/2hiu_1H.pdb')
 
-for model in structure:
-    for chain in model:
-        print chain
-        for residue in chain:
-            print residue
-            for atom in residue:
-                print atom
+''' TO DO:
+    1. Create a class to read charmm27.ff/ffnonbonded.itp for masses. Place in a dictionary of atom types.
+    2. Pass dicctionary with atom types and structure[0] to return center of mass from structure_values()
+    3. Create a new structure so that both the original structure plus the centered (by center of mass)
+       is output in the same pdb.
+'''
 
-# Iterate over all atoms in a structure
-counter = 0
+import centers as ct
+newCenter = structure_values()
+CM = [1,1,1] #newCenter.center_of_mass(structure[0])
+
+print("Done calling centers.py", CM)
+
 for atom in structure.get_atoms():
-    print(counter,atom)
-    counter = counter + 1
- 
-# Iterate over all residues in a model
-counter = 0
-for residue in model.get_residues():
-    print(counter,residue)
-    counter = counter + 1
-    
-model = structure[0]
-chain = model['A']
-residue = chain[1]
-atom = residue['CA']
-
-atom = structure[0]['A'][10]['CA']
-
-atom.get_name()           # atom name (spaces stripped, e.g. 'CA')
-atom.get_id()             # id (equals atom name)
-atom.get_coord()          # atomic coordinates
-atom.get_vector()         # atomic coordinates as Vector object
-atom.get_bfactor()        # isotropic B factor
-atom.get_occupancy()      # occupancy
-atom.get_altloc()         # alternative location specifier
-atom.get_sigatm()         # std. dev. of atomic parameters
-atom.get_siguij()         # std. dev. of anisotropic B factor
-atom.get_anisou()         # anisotropic B factor
-atom.get_fullname()       # atom name (with spaces, e.g. '.CA.')
-
-# Get some atoms and distance between
-ca1 = residue1['CA']
-ca2 = residue2['CA']
-# Simply subtract the atoms to get their distance
-distance = ca1-ca2
-
-# Get angles
-vector1 = atom1.get_vector()
-vector2 = atom2.get_vector()
-vector3 = atom3.get_vector()
-angle = calc_angle(vector1, vector2, vector3)
-
-# Get torsion angles
-vector1 = atom1.get_vector()
-vector2 = atom2.get_vector()
-vector3 = atom3.get_vector()
-vector4 = atom4.get_vector()
-angle = calc_dihedral(vector1, vector2, vector3, vector4)
+    print(atom.get_coord(), CM) 
+    atom.set_coord(atom.get_coord() - CM)
+    print(atom.get_coord())
 
 #eAngx = 0.0;      eAngy = 0.0;       eAngz = 0.0;
 #a1 = 0.5 * eAngy;
