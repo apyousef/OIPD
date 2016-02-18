@@ -7,7 +7,6 @@ _ATOM_LINE = re.compile(r'[\s\t]+([A-Z0-9]+)[\s\t]+([A-Z0-9]+)[\s\t]+([-+]?[0-9]
 _BONDS_SECTION = re.compile(r'^\s+\[\s+bonds\s+\]')
 _BOND_LINE = re.compile(r'[\s\t]+([-+]?[A-Z0-9]+)[\s\t]+([-+]?[A-Z0-9]+)')
 _GENERIC_SECTION = re.compile(r'^\s+\[\s+.*\s+\]')
-FILEPATH = '/Users/andrewyousef/Documents/Ideas/ProteinModeling/OIPD/charmm27.ff/aminoacids.rtp'
 
 class _AbstractParser(object):
     def __init__(self, _rtp):
@@ -163,9 +162,3 @@ class RTP(object):
     @property
     def residues(self):
         return self._rtp._residues
-
-r = RTP(FILEPATH)
-
-print r.residues.get('ALA').atoms
-print r.residues.get('ASPP').atoms['CG'].charge
-print r.residues.get('ASPP').bonds
