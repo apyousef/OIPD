@@ -26,19 +26,29 @@ options, args = option_parser.parse_args()
 # keywords, but for now let's not over-engineer.
 pdb_parser = PDBParser()
 
-def _calculate_center_of_mass(structure):
-    total_mass = 0
-    mx_total = 0
-    my_total = 0
-    mz_total = 0
-    for atom in structure.get_atoms():
+class CenterOfMassCalculator(object):
+    def __init__(self):
+        self.mx_total = 0
+        self.my_total = 0
+        self.mz_total = 0
+        self.total_mass = 0
+
+    def add(self, atom):
         coords = atom.coord.tolist()
         mass = atom.mass
-        total_mass += mass
-        mx_total += coords[0] * mass
-        my_total += coords[1] * mass
-        mz_total += coords[2] * mass
-    return [mx_total/total_mass, my_total/total_mass, mz_total/total_mass]
+        self.total_mass += mass
+        self.mx_total += coords[0] * mass
+        self.my_total += coords[1] * mass
+        self.mz_total += coords[2] * mass
+
+    def center_of_mass(self):
+        return [self.mx_total/self.total_mass, self.my_total/self.total_mass, self.mz_total/self.total_mass]
+
+def _calculate_center_of_mass(structure):
+    cmc = CenterOfMassCalculator()
+    for atom in structure.get_atoms():
+        cmc.add(atom)
+    return cmc.center_of_mass()
 
 def _get_residue_data(charmmdir):
     aminoacids_path = os.path.join(charmmdir, 'aminoacids.rtp')
