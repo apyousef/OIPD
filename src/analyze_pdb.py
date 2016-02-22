@@ -42,6 +42,8 @@ class CenterOfMassCalculator(object):
         self.mz_total += coords[2] * mass
 
     def center_of_mass(self):
+        if self.total_mass == 0:
+            raise Exception("total mass is zero")
         return [self.mx_total/self.total_mass, self.my_total/self.total_mass, self.mz_total/self.total_mass]
 
 def _calculate_center_of_mass(structure):
