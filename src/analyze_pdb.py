@@ -88,25 +88,57 @@ def _do_atom_magic(rtp_residue, atom):
         replacement_atom = rtp_residue.atoms.get('HG1')
     return replacement_atom
 
-def _calculate_center_of_charge(rtp, structure):
-    total_charge = 0
-    for atom in structure.get_atoms():
+class ChargeCalculator(object):
+    def __init__(self, rtp):
+        self.qx_total = 0
+        self.qy_total = 0
+        self.qz_total = 0
+        self.q_total = 0
+        self.rtp = rtp
+
+    def add(self, atom):
         name = atom.get_name()
         res = atom.get_parent()
-        if res.get_resname() == 'HOH':
-            continue
-        rtp_residue = rtp.residues.get(res.resname)
+        rtp_residue = self.rtp.residues.get(res.resname)
         if not rtp_residue:
-            rtp_residue = _do_histidine_magic(res, rtp)
+            rtp_residue = _do_histidine_magic(res, self.rtp)
 
         rtp_atom = rtp_residue.atoms.get(name)
         if not rtp_atom:
             rtp_atom = _do_atom_magic(rtp_residue, atom)
 
         charge = rtp_atom.charge
-        print charge
-        total_charge+= charge
-    print "total_charge = %s" % total_charge
+        coords = atom.coord.tolist()
+
+        self.q_total += charge
+        self.qx_total += coords[0] * charge
+        self.qy_total += coords[1] * charge
+        self.qz_total += coords[2] * charge
+
+    def qr_total(self):
+        return [self.qx_total, self.qy_total, self.qz_total]
+
+    def total_charge(self):
+        return self.q_total
+
+def _calculate_center_of_charge(rtp, structure):
+    total_charge = 0
+    cc = ChargeCalculator(rtp)
+    cmc = CenterOfMassCalculator()
+    for atom in structure.get_atoms():
+        if atom.get_parent().get_resname() == 'HOH':
+            continue
+        cc.add(atom)
+        cmc.add(atom)
+
+    qr_total = cc.qr_total()
+    total_charge = cc.total_charge()
+    center_of_mass = cmc.center_of_mass()
+    qr0_total = [x * total_charge for x in center_of_mass]
+
+    return [qr_total[0] - qr0_total[0],
+            qr_total[1] - qr0_total[1],
+            qr_total[2] - qr0_total[2]]
 
 def translate_molecule(structure, direction):
     for atoms in structure.get_atoms():
@@ -240,7 +272,7 @@ def main():
                     break
 
     rtp = _get_residue_data(charmmdir)
-    _calculate_center_of_charge(rtp, structure)
+    print _calculate_center_of_charge(rtp, structure)
 
     # We want to join the two structures into one structure, with one model
     # and the chains of structure 1 and 2. First, deepcopy copies an object 
