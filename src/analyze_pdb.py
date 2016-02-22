@@ -4,12 +4,20 @@ import copy
 import optparse
 import string
 import numpy as np
+import RTPParser as rp
 from Bio.PDB.PDBParser import PDBParser
 from Bio.PDB.PDBIO import PDBIO
 option_parser = optparse.OptionParser()
 option_parser.add_option('--id',
                         type='str',
                         help='id to attach to pdb structure')
+
+#FIXME for now this will work, but eventually we probably want to
+# make the path to the charmm27.ff directory an environment variable
+# that can be set to a sensible default in a shell script.
+option_parser.add_option('--charmmdir',
+                        type='str',
+                        help='path to charmm force field directory')
 
 options, args = option_parser.parse_args()
 
@@ -31,6 +39,62 @@ def _calculate_center_of_mass(structure):
         my_total += coords[1] * mass
         mz_total += coords[2] * mass
     return [mx_total/total_mass, my_total/total_mass, mz_total/total_mass]
+
+def _get_residue_data(charmmdir):
+    aminoacids_path = os.path.join(charmmdir, 'aminoacids.rtp')
+    if not os.path.exists(aminoacids_path):
+        print "Error: Failed to find aminoacids.rtp file."
+        sys.exit(1)
+    return rp.RTP(aminoacids_path)
+
+def _do_histidine_magic(res, rtp):
+    return rtp.residues.get('HSD')
+
+def _do_atom_magic(rtp_residue, atom):
+    name = atom.name
+    replacement_atom = None
+    if rtp_residue.name == 'ACE':
+        if name == 'H1':
+            replacement_atom = rtp_residue.atoms.get('HH31')
+        elif name == 'H2':
+            replacement_atom = rtp_residue.atoms.get('HH32')
+        elif name == 'H3':
+            replacement_atom = rtp_residue.atoms.get('HH33')
+    elif name == 'H':
+        replacement_atom = rtp_residue.atoms.get('HN')
+    elif name == 'HA3':
+        replacement_atom = rtp_residue.atoms.get('HA1')
+    elif name == 'HB3':
+        replacement_atom = rtp_residue.atoms.get('HB1')
+    elif name == 'HD3':
+        replacement_atom = rtp_residue.atoms.get('HD1')
+    elif name == 'HE3':
+        replacement_atom = rtp_residue.atoms.get('HE1')
+    elif name == 'HG3':
+        replacement_atom = rtp_residue.atoms.get('HG1')
+    elif rtp_residue.name == 'SER' and name == 'HG':
+        replacement_atom = rtp_residue.atoms.get('HG1')
+    return replacement_atom
+
+def _calculate_center_of_charge(rtp, structure):
+    total_charge = 0
+    for atom in structure.get_atoms():
+        name = atom.get_name()
+        res = atom.get_parent()
+        if res.get_resname() == 'HOH':
+            continue
+        rtp_residue = rtp.residues.get(res.resname)
+        if not rtp_residue:
+            rtp_residue = _do_histidine_magic(res, rtp)
+
+        rtp_atom = rtp_residue.atoms.get(name)
+        if not rtp_atom:
+            rtp_atom = _do_atom_magic(rtp_residue, atom)
+
+        charge = rtp_atom.charge
+        print charge
+        total_charge+= charge
+    print "total_charge = %s" % total_charge
 
 def translate_molecule(structure, direction):
     for atoms in structure.get_atoms():
@@ -100,6 +164,21 @@ def main():
         print "Error: File path for molecule to be rotated does not exist."
         sys.exit(1)
 
+    # validate charmm force field directory
+    charmmdir = options.charmmdir
+    if not charmmdir:
+        print "Error: No charmm force field directory provided"
+        sys.exit(1)
+
+    if not os.path.exists(charmmdir):
+        print "Error: charmm force field directory does not exist."
+        sys.exit(1)
+
+    if not os.path.isdir(charmmdir):
+        print "Error: %s is not a directory" % charmmdir
+        sys.exit(1)
+
+
     #TODO We should eventually perform more rigorous validation,
     # e.g. verifying file permissions.
 
@@ -147,6 +226,9 @@ def main():
                     i.id = j
                     ids[j] = True
                     break
+
+    rtp = _get_residue_data(charmmdir)
+    _calculate_center_of_charge(rtp, structure)
 
     # We want to join the two structures into one structure, with one model
     # and the chains of structure 1 and 2. First, deepcopy copies an object 
