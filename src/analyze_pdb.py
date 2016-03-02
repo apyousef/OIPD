@@ -271,9 +271,6 @@ def main():
                     ids[j] = True
                     break
 
-    rtp = _get_residue_data(charmmdir)
-    print _calculate_center_of_charge(rtp, structure)
-
     # We want to join the two structures into one structure, with one model
     # and the chains of structure 1 and 2. First, deepcopy copies an object 
     # recursively
